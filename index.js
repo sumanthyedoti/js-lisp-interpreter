@@ -1,39 +1,24 @@
-const { numberParser } = require("./parsers")
+const readline = require("readline")
+const parse = require("./parse")
+const eval = require("./eval")
+const { log } = require("console")
 
-function parse(program) {
-  return buildAST(tokenize(program))
-}
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+rl.on("close", function () {
+  process.exit(0)
+})
 
-function tokenize(program) {
-  return program
-    .replaceAll("(", " ( ")
-    .replaceAll(")", " ) ")
-    .split(" ")
-    .filter((it) => it !== "")
-}
+repl()
 
-function buildAST(tokens, exp = []) {
-  if (!tokens.length) return exp
-  const [head, ...tail] = tokens
-  if (head === "(") {
-    // build new sub-expression
-    const [remTail, subExp] = buildAST(tail, [])
-    // append the sub-expression to parent expression
-    return buildAST(remTail, exp.length ? [...exp, subExp] : subExp)
-  }
-  if (head === ")") {
-    // return sub-expression
-    return [tail, exp]
-  }
-  //when token is atom
-  return buildAST(tail, [...exp, getAtom(head)])
+function repl() {
+  rl.question("\nlisp> ", function (input) {
+    if (input === ":q" || input === ":quit") {
+      rl.close()
+    }
+    console.log(eval(parse(input)))
+    repl()
+  })
 }
-function getAtom(token) {
-  let numberParsed = numberParser(token)
-  if (numberParsed) return numberParsed
-  return token
-}
-// let program = "(begin (define r (* 2 10)) (* pi (* r r)))"
-let program = "()"
-
-console.log("=>", JSON.stringify(parse(program)))
