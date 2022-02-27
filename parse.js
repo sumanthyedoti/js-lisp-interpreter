@@ -1,4 +1,7 @@
 function analyzeExpression(program) {
+  if (program[0] !== "(") {
+    throw "Error: not an expression"
+  }
   const paranthesisStack = []
   for (let i of program) {
     if (i === "(") {
@@ -45,13 +48,13 @@ function buildAST(tokens, exp = []) {
 
 function getAtom(token) {
   let numberParsed = numberParser(token)
-  if (numberParsed) return numberParsed
+  if (numberParsed !== null) return numberParsed
   return token
 }
 
 function numberParser(token) {
   const inputRegExp = RegExp(
-    /^-?(0(?=\D+)|(0(?=\.))|[1-9][0-9]*)(\.?\d*([Ee][-+]?\d+)?)?/
+    /^-?(0(?=$)|0(?=\D+)|(0(?=\.))|[1-9][0-9]*)(\.?\d*([Ee][-+]?\d+)?)?$/
   )
   const matches = token.match(inputRegExp)
   if (!matches) {

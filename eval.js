@@ -1,24 +1,26 @@
-const env = require("./env")
+const globalEnv = require("./globalEnv")
 
-function eval(x) {
-  if (env.isSymbol(x)) return env[x]
+function eval(x, env = globalEnv) {
+  if (env.isSymbol.call(env, x)) return env[x]
   if (env.isNumber(x)) return x
-  if (env[x[0]])
-    return env[x[0]].apply(
+
+  let operator = x[0]
+  if (typeof env[operator] === "function")
+    return env[operator].apply(
       this,
-      x.slice(1).map((it) => eval(it))
+      x.slice(1).map((it) => eval(it, env))
     )
-  if (x[0] === "if") {
+  if (operator === "if") {
     const [_, test, conseq, alt] = x
-    return eval(eval(test) ? conseq : alt)
+    return eval(eval(test, env) ? eval(conseq, env) : eval(alt, env), env)
   }
-  if (x[0] === "define") {
+  if (operator === "define") {
     const [_, symbol, exp] = x
-    env[symbol] = eval(exp)
+    env[symbol] = eval(exp, env)
     return env[symbol]
   }
-  if (x[0] === "begin") {
-    return x.slice(1).reduce((_, exp) => eval(exp), null)
+  if (operator === "begin") {
+    return x.slice(1).reduce((_, exp) => eval(exp, env), null)
   }
   throw `Error: '${x}' is not defined`
 }
