@@ -1,7 +1,6 @@
 const readline = require("readline")
 const parse = require("./parse")
 const eval = require("./eval")
-const { log } = require("console")
 
 const rl = readline.createInterface({
   input: process.stdin,

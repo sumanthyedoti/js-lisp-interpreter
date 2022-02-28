@@ -1,6 +1,6 @@
 const globalEnv = {
   "+": (...args) => args.reduce((acc, it) => acc + it, 0),
-  "-": (...args) => args.reduce((acc, it) => acc - it, 0),
+  "-": (...args) => args.slice(1).reduce((acc, it) => acc - it, args[0]),
   "*": (...args) => args.reduce((acc, it) => acc * it, 1),
   "/": (...args) => args.slice(1).reduce((acc, it) => acc / it, args[0]),
   list: (...args) => args,
