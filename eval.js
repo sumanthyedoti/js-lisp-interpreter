@@ -29,7 +29,10 @@ function eval(x, env = globalEnv) {
   if (operator === "define") {
     const [_, symbol, exp] = x
     env[symbol] = eval(exp, env)
-    return symbol
+    return env[symbol]
+  }
+  if (operator === "quote") {
+    return x[1]
   }
   if (operator === "begin") {
     return x.slice(1).reduce((_, exp) => eval(exp, env), null)
@@ -40,6 +43,12 @@ function eval(x, env = globalEnv) {
       __params: params,
       __body: body,
     }
+  }
+  if (operator === "set!") {
+    const [_, symbol, exp] = x
+    const prevValue = env[symbol]
+    env[symbol] = eval(exp, env)
+    return prevValue
   }
   throw `Error: '${x}' is not defined`
 }

@@ -3,12 +3,12 @@ const globalEnv = {
   "-": (...args) => args.slice(1).reduce((acc, it) => acc - it, args[0]),
   "*": (...args) => args.reduce((acc, it) => acc * it, 1),
   "/": (...args) => args.slice(1).reduce((acc, it) => acc / it, args[0]),
-  list: (...args) => args,
-  print: (x) => x,
   expt: (...args) => {
     if (args.length !== 2) throw new Error("'expt'should get two arguments")
     return args[0] ** args[1]
   },
+  list: (...args) => args,
+  print: (x) => x,
   "<": (...args) => {
     for (let i = 1; i < args.length; i++) {
       if (args[i - 1] >= args[i]) return false
@@ -45,6 +45,12 @@ const globalEnv = {
   ceil: (x) => Math.ceil(x),
   not: (x) => !x,
   pi: Math.PI,
+  head: (...args) => args[0][0],
+  tail: (...args) => args[0].slice(1),
+  cons: (...args) => [
+    args[0],
+    ...(Array.isArray(args[1]) ? args[1] : [args[1]]),
+  ],
   isNumber: (x) => typeof x === "number",
   isSymbol: function (x) {
     return typeof x === "string" && x in this
