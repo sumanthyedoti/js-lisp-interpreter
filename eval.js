@@ -3,6 +3,7 @@ const globalEnv = require("./globalEnv")
 const isObject = (x) => typeof x === "object" && !Array.isArray(x) && x !== null
 
 function eval(x, env = globalEnv) {
+  if (Array.isArray(x) && (!x.length || env.isNumber(x[0]))) return x
   if (env.isSymbol.call(env, x)) return env[x]
   if (env.isNumber(x)) return x
 

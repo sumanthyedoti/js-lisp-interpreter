@@ -7,7 +7,12 @@ const globalEnv = {
     if (args.length !== 2) throw new Error("'expt'should get two arguments")
     return args[0] ** args[1]
   },
-  list: (...args) => args,
+  "=": (...args) => {
+    for (let i = 1; i < args.length; i++) {
+      if (args[i - 1] !== args[i]) return false
+    }
+    return true
+  },
   print: (x) => x,
   "<": (...args) => {
     for (let i = 1; i < args.length; i++) {
@@ -33,6 +38,7 @@ const globalEnv = {
     }
     return true
   },
+  list: (...args) => args,
   min: (...args) =>
     args.reduce((acc, it) => (it < acc ? it : acc), Number.POSITIVE_INFINITY),
   max: (...args) =>
