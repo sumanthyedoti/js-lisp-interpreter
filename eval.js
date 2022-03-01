@@ -1,7 +1,5 @@
 const globalEnv = require("./globalEnv")
 
-const isObject = (x) => typeof x === "object" && !Array.isArray(x) && x !== null
-
 function eval(x, env = globalEnv) {
   if (Array.isArray(x) && (!x.length || env.isNumber(x[0]))) return x
   if (env.isSymbol.call(env, x)) return env[x]
@@ -13,15 +11,6 @@ function eval(x, env = globalEnv) {
       this,
       x.slice(1).map((it) => eval(it, env))
     )
-  }
-  // user defined procedure
-  if (env[operator] && isObject(env[operator])) {
-    const params = env[operator].__params
-    const procedureEnv = Object.create(env)
-    params.forEach((param, i) => {
-      procedureEnv[param] = eval(x[i + 1], env)
-    })
-    return eval(env[operator].__body, procedureEnv)
   }
   if (operator === "if") {
     const [_, test, conseq, alt] = x
@@ -40,9 +29,12 @@ function eval(x, env = globalEnv) {
   }
   if (operator === "lambda") {
     const [_, params, body] = x
-    return {
-      __params: params,
-      __body: body,
+    return function (...args) {
+      const procedureEnv = Object.create(env)
+      params.forEach((param, i) => {
+        procedureEnv[param] = eval(args[i], env)
+      })
+      return eval(body, procedureEnv)
     }
   }
   if (operator === "set!") {
