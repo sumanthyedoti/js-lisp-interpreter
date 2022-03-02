@@ -5,28 +5,28 @@ function eval(x, env = globalEnv) {
   if (env.isSymbol.call(env, x)) return env[x]
   if (env.isNumber(x)) return x
 
-  let operator = x[0]
+  let [operator, ...args] = x
   if (typeof env[operator] === "function") {
     const procedure = eval(operator, env)
-    return procedure(...x.slice(1).map((arg) => eval(arg, env)))
+    return procedure(...args.map((arg) => eval(arg, env)))
   }
   if (operator === "if") {
-    const [_, test, conseq, alt] = x
+    const [test, conseq, alt] = args
     return eval(eval(test, env) ? eval(conseq, env) : eval(alt, env), env)
   }
   if (operator === "define") {
-    const [_, symbol, exp] = x
+    const [symbol, exp] = args
     env[symbol] = eval(exp, env)
     return env[symbol]
   }
   if (operator === "quote") {
-    return x[1]
+    return args[0]
   }
   if (operator === "begin") {
-    return x.slice(1).reduce((_, exp) => eval(exp, env), null)
+    return args.reduce((_, exp) => eval(exp, env), null)
   }
   if (operator === "lambda") {
-    const [_, params, body] = x
+    const [params, body] = args
     return function (...args) {
       const procedureEnv = Object.create(env)
       params.forEach((param, i) => {
@@ -36,7 +36,7 @@ function eval(x, env = globalEnv) {
     }
   }
   if (operator === "set!") {
-    const [_, symbol, exp] = x
+    const [symbol, exp] = args
     const prevValue = env[symbol]
     env[symbol] = eval(exp, env)
     return prevValue
