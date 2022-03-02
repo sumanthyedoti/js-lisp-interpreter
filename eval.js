@@ -7,10 +7,8 @@ function eval(x, env = globalEnv) {
 
   let operator = x[0]
   if (typeof env[operator] === "function") {
-    return env[operator].apply(
-      this,
-      x.slice(1).map((it) => eval(it, env))
-    )
+    const procedure = eval(operator, env)
+    return procedure(...x.slice(1).map((arg) => eval(arg, env)))
   }
   if (operator === "if") {
     const [_, test, conseq, alt] = x

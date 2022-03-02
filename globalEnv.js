@@ -53,10 +53,7 @@ const globalEnv = {
   pi: Math.PI,
   head: (...args) => args[0][0],
   tail: (...args) => args[0].slice(1),
-  cons: (...args) => [
-    args[0],
-    ...(Array.isArray(args[1]) ? args[1] : [args[1]]),
-  ],
+  cons: (head, tail) => [head, ...(Array.isArray(tail) ? tail : [tail])],
   isNumber: (x) => typeof x === "number",
   isSymbol: function (x) {
     return typeof x === "string" && x in this
