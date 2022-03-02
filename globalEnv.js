@@ -39,6 +39,7 @@ const globalEnv = {
     return true
   },
   list: (...args) => args,
+  length: (list) => list.length,
   min: (...args) =>
     args.reduce((acc, it) => (it < acc ? it : acc), Number.POSITIVE_INFINITY),
   max: (...args) =>
@@ -51,8 +52,8 @@ const globalEnv = {
   ceil: (x) => Math.ceil(x),
   not: (x) => !x,
   pi: Math.PI,
-  head: (...args) => args[0][0],
-  tail: (...args) => args[0].slice(1),
+  head: (list) => list[0],
+  tail: (list) => list.slice(1),
   cons: (head, tail) => [head, ...(Array.isArray(tail) ? tail : [tail])],
   map: (mapper, arr) => arr.map(mapper),
   isNumber: (x) => typeof x === "number",
