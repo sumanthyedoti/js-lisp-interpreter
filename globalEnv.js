@@ -54,6 +54,7 @@ const globalEnv = {
   head: (...args) => args[0][0],
   tail: (...args) => args[0].slice(1),
   cons: (head, tail) => [head, ...(Array.isArray(tail) ? tail : [tail])],
+  map: (mapper, arr) => arr.map(mapper),
   isNumber: (x) => typeof x === "number",
   isSymbol: function (x) {
     return typeof x === "string" && x in this

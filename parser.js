@@ -47,7 +47,7 @@ function buildAST(tokens, exp = []) {
 }
 
 function getAtom(token) {
-  let numberParsed = numberParser(token)
+  const numberParsed = numberParser(token)
   if (numberParsed !== null) return numberParsed
   return token
 }

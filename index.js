@@ -1,6 +1,8 @@
 const readline = require("readline")
-const parse = require("./parse")
+const parse = require("./parser")
 const eval = require("./eval")
+
+let interpreter = (input) => eval(parse(input))
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -17,7 +19,12 @@ function repl() {
     if (input === ":q" || input === ":quit") {
       rl.close()
     }
-    console.log(eval(parse(input)))
-    repl()
+    try {
+      console.log(interpreter(input))
+    } catch (err) {
+      console.log(err)
+    } finally {
+      repl()
+    }
   })
 }
