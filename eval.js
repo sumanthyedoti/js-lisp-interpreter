@@ -4,7 +4,7 @@ function eval(x, env = globalEnv) {
   if (env.isSymbol.call(env, x)) return env[x]
   if (env.isNumber(x)) return x
 
-  if (!Array.isArray(x)) return x
+  if (!Array.isArray(x) || !x.length) return x
 
   let [operator, ...args] = x
   if (operator === "if") {
@@ -16,11 +16,9 @@ function eval(x, env = globalEnv) {
     env[symbol] = eval(exp, env)
     return typeof env[symbol] === "function" ? symbol : env[symbol]
   }
-  debugger
   if (operator === "quote") {
     return args[0]
   }
-  debugger
   if (operator === "begin") {
     return args.reduce((_, exp) => eval(exp, env), null)
   }
@@ -41,7 +39,7 @@ function eval(x, env = globalEnv) {
     env[symbol] = eval(exp, env)
     return prevValue
   }
-  if (typeof env[operator] === "function") {
+  if (typeof env[operator] === "function" || Array.isArray(operator)) {
     const procedure = eval(operator, env)
     return procedure(...args.map((arg) => eval(arg, env)))
   }

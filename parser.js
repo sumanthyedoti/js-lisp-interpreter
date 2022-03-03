@@ -36,7 +36,7 @@ function buildAST(tokens, exp = []) {
     // build sub-expression
     const [remTail, subExp] = buildAST(tail, [])
     // append the sub-expression to parent expression
-    return buildAST(remTail, exp.length ? [...exp, subExp] : subExp)
+    return buildAST(remTail, remTail.length ? [...exp, subExp] : subExp)
   }
   if (head === ")") {
     // return sub-expression
