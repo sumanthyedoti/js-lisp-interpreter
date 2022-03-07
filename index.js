@@ -1,7 +1,6 @@
 const readline = require("readline")
 const parse = require("./parser")
 const eval = require("./eval")
-const { log } = require("console")
 
 let interpret = (input) => eval(parse(input))
 

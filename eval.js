@@ -44,7 +44,6 @@ function eval(x, env = globalEnv) {
     return procedure(...args.map((arg) => eval(arg, env)))
   }
   if (Array.isArray(x)) return x
-  throw `ReferenceError: '${x}' is not defined`
 }
 
 module.exports = eval

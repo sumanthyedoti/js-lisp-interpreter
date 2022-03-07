@@ -13,6 +13,7 @@ const globalEnv = {
     }
     return true
   },
+  "equal?": (x, y) => x === y,
   print: (x) => x,
   "<": (...args) => {
     for (let i = 1; i < args.length; i++) {
