@@ -1,71 +1,86 @@
-function analyzeExpression(program) {
-  if (program[0] !== "(") {
-    throw "Error: not an expression"
-  }
-  const paranthesisStack = []
-  for (let i of program) {
-    if (i === "(") {
-      paranthesisStack.push(i)
-    } else if (i === ")") {
-      if (!paranthesisStack.length) {
-        throw "SyntaxError: expressions are not balanced '()'`"
-      }
-      if (paranthesisStack.slice(-1)[0] === "(") {
-        paranthesisStack.pop()
-      }
-    }
-  }
-  if (paranthesisStack.length) {
-    throw "SyntaxError: expressions are not balanced '()'`"
-  }
-  return true
-}
+const globalEnv = require("./globalEnv")
 
-function tokenize(program) {
-  return program
-    .replaceAll("(", " ( ")
-    .replaceAll(")", " ) ")
-    .split(" ")
-    .filter((it) => it !== "")
-}
+const speaialForms = Object.freeze([
+  "if",
+  "define",
+  "set!",
+  "lambda",
+  "begin",
+  "quote",
+])
 
-function buildAST(tokens, exp = []) {
-  if (!tokens.length) return exp
-  const [head, ...tail] = tokens
-  if (head === "(") {
-    // build sub-expression
-    const [remTail, subExp] = buildAST(tail, [])
-    // append the sub-expression to parent expression
-    return buildAST(remTail, remTail.length ? [...exp, subExp] : subExp)
-  }
-  if (head === ")") {
-    // return sub-expression
-    return [tail, exp]
-  }
-  // when token is atom
-  return buildAST(tail, [...exp, getAtom(head)])
-}
-
-function getAtom(token) {
-  const numberParsed = numberParser(token)
-  if (numberParsed !== null) return numberParsed
-  return token
-}
-
-function numberParser(token) {
+function numberParser(input) {
   const inputRegExp = RegExp(
     /^-?(0(?=$)|0(?=\D+)|(0(?=\.))|[1-9][0-9]*)(\.?\d*([Ee][-+]?\d+)?)?$/
   )
-  const matches = token.match(inputRegExp)
+  const matches = input.match(inputRegExp)
   if (!matches) {
     return null
   }
-  return matches[0] * 1
+  return [matches[0] * 1, input.slice(matches[0].length).trim()]
 }
 
-function parse(program) {
-  analyzeExpression(program)
-  return buildAST(tokenize(program))
+function stringParser(input) {
+  if (input[0] === "(") return null
+  const atom = input.split(" ")[0]
+  // if (atom.match(/^[a-zA-Z_!][a-zA-Z_!0-9]*$/))
+  return [atom, input.slice(atom.length).trim()]
+  // return null
 }
 
-module.exports = parse
+function expressionParser(input, env = globalEnv) {
+  if (env.isNumber(input)) return [input, "", env]
+  input = input.trim()
+  // console.log({ input })
+  //number
+  const numberParsed = numberParser(input)
+  if (numberParsed) return [...numberParsed, env]
+
+  if (input[0] === "(") {
+    return expressionParser(input.slice(1), env)
+  }
+
+  const stringParsed = stringParser(input)
+  if (!stringParsed) return null
+  let [operator, rest] = stringParser(input)
+  if (speaialForms.indexOf(operator) >= 0) return -1
+
+  if (env[operator]) {
+    // env function
+    if (typeof env[operator] === "function") {
+      const args = []
+      while (rest[0] !== ")") {
+        const [value, remExp, localEnv] = expressionParser(rest)
+        rest = remExp
+        env = localEnv
+        if (value) args.push(value)
+      }
+      rest = rest.slice(1)
+      return [
+        env[operator](...args.map((x) => expressionParser(x, env)[0])),
+        rest,
+      ]
+    }
+    // value in env, Eg: PI
+    return [env[operator], rest, env]
+  }
+
+  if (input[0] === ")") {
+    return [null, input, env]
+  }
+
+  return [...stringParsed, env]
+}
+console.log(expressionParser("( * 3 pi )"))
+
+// let parsers = [numberParser, stringParser, specialFormParser]
+
+function eval(input, env = globalEnv) {
+  for (let p of parsers) {
+    let parsed = p(input, env)
+    if (parsed) return parsed
+  }
+  return null
+}
+
+// console.log(interpret("(max 3 4)"))
