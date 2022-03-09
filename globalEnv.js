@@ -61,6 +61,7 @@ const globalEnv = {
   isSymbol: function (x) {
     return typeof x === "string" && x in this
   },
+  isAtom: (x) => typeof x === "number" || x === false || x === true,
 }
 
 module.exports = globalEnv

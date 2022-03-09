@@ -9,7 +9,7 @@ function eval(x, env = globalEnv) {
   let [operator, ...args] = x
   if (operator === "if") {
     const [test, conseq, alt] = args
-    return eval(eval(test, env) ? eval(conseq, env) : eval(alt, env), env)
+    return eval(test, env) ? eval(conseq, env) : eval(alt, env)
   }
   if (operator === "define") {
     const [symbol, exp] = args
