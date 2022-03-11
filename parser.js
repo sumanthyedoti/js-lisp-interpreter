@@ -135,15 +135,13 @@ function getArguments(input, env = globalEnv) {
     const [value, remExp, localEnv] = expressionParser(input, env)
     input = remExp
     env = localEnv
-    if (value) args.push(value)
+    if (value !== null) args.push(value)
   }
   return [args, input.slice(1).trim()]
 }
 
 function expressionParser(input, env = globalEnv) {
   if (env.isAtom(input)) return [input, "", env]
-  if (Array.isArray(input)) return input
-  // console.log({ expIn: input })
   input = input.trim()
   //number
   debugger
@@ -154,7 +152,6 @@ function expressionParser(input, env = globalEnv) {
   debugger
   if (input[0] === "(") {
     let res = expressionParser(input.slice(1), env)
-    // console.log({ exp: getSubExpression(input)[0] }, " -- ", res[0])
     return !res[1].length ? res[0] : res
   }
 
@@ -176,11 +173,9 @@ function expressionParser(input, env = globalEnv) {
     if (typeof env[operator] === "function") {
       const [args, aftreArgs] = getArguments(rest, env)
       rest = aftreArgs
-      return [
-        env[operator](...args.map((x) => expressionParser(x, env)[0])),
-        rest,
-        env,
-      ]
+      const fargs = args.map((x) => expressionParser(x, env)[0])
+      const fres = env[operator](...fargs)
+      return [fres, rest, env]
     }
     // value in env, Eg: PI
     debugger
@@ -199,10 +194,10 @@ function spaceAroundTokens(input) {
   return input.replaceAll("(", " ( ").replaceAll(")", " ) ").trim()
 }
 let exp1 = spaceAroundTokens(
-  "(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))"
+  "(define fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))"
 )
 console.log(expressionParser(exp1))
-console.log(expressionParser(spaceAroundTokens("(fact 10)")))
+console.log(expressionParser(spaceAroundTokens("(fib 10)")))
 
 // let parsers = [numberParser, stringParser, specialFormParser]
 
