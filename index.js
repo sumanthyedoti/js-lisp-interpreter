@@ -24,7 +24,12 @@ function repl() {
     }
     try {
       const res = interpret(input)
-      if (Array.isArray(res) && res[1] && res[1].length) {
+      if (
+        Array.isArray(res) &&
+        res[1] &&
+        res[1].length &&
+        typeof res[2] === "object"
+      ) {
         throw "Error parsing the expressing"
       }
       console.log(res)

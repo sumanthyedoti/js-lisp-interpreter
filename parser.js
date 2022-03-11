@@ -44,6 +44,10 @@ function defineParser(input, env) {
   return [result, remaining.slice(1).trim(), env]
 }
 function quoteParser(input, env) {
+  if (input[0] === "(") {
+    const [exp, rest] = getSubExpression(input)
+    return [exp, rest, env]
+  }
   const [arg, aftreArgs] = getArguments(input)
   return [arg[0], aftreArgs.slice(1).trim(), env]
 }
@@ -83,7 +87,9 @@ function lamdaParser(input, env) {
   const procedure = function (...args) {
     const procedureEnv = Object.create(env)
     params.forEach((param, i) => {
-      procedureEnv[param] = expressionParser(args[i], env)[0]
+      procedureEnv[param] = Array.isArray(args[i])
+        ? args[i]
+        : expressionParser(args[i], env)[0]
     })
     return expressionParser(body, procedureEnv)
   }
@@ -136,7 +142,6 @@ function getArguments(input, env = globalEnv) {
 }
 
 function expressionParser(input, env = globalEnv) {
-  if (Array.isArray(input)) return input
   if (env.isAtom(input)) return [input, "", env]
   input = input.trim()
   //number
@@ -145,6 +150,7 @@ function expressionParser(input, env = globalEnv) {
     return numberParsed[1].length ? [...numberParsed, env] : numberParsed[0]
   }
 
+  //quote
   if (input[0] === "(") {
     let res = expressionParser(input.slice(1), env)
     return !res[1].length ? res[0] : res
@@ -158,7 +164,7 @@ function expressionParser(input, env = globalEnv) {
   if (operator in specialFormParsers) {
     return specialFormParsers[operator](rest.trim(), env)
   }
-
+  debugger
   if (!isAbsent(env[operator])) {
     // env function
     if (typeof env[operator] === "function") {
@@ -172,6 +178,9 @@ function expressionParser(input, env = globalEnv) {
     throw "Error parsing the expression. Please check ()s"
   }
   // string literal
+  if (operator[0] === "'") {
+    return [operator.slice(1), rest, env]
+  }
   return [...stringParsed, env]
 }
 
