@@ -1,8 +1,11 @@
+const { log } = require("console")
 const readline = require("readline")
 const parse = require("./parser")
-const eval = require("./eval")
 
-let interpret = (input) => eval(parse(input))
+function spaceAroundTokens(input) {
+  return input.replaceAll("(", " ( ").replaceAll(")", " ) ").trim()
+}
+let interpret = (input) => parse(spaceAroundTokens(input))
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -20,9 +23,13 @@ function repl() {
       rl.close()
     }
     try {
-      console.log(interpret(input))
+      const res = interpret(input)
+      if (Array.isArray(res) && res[1] && res[1].length) {
+        throw "Error parsing the expressing"
+      }
+      console.log(res)
     } catch (err) {
-      console.log(err)
+      console.log(err.messsage || err)
     } finally {
       repl()
     }

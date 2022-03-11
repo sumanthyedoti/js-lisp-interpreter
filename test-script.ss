@@ -11,9 +11,7 @@
 (circle-area (fact 10))
 ; 4.1369087198e+13
 
-(define count (lambda (item L) (if (length L) (+ (equal? item (head L)) (count
-                                                                          item
-                                                                          (tail L))) 0)))
+(define count (lambda (item L) (if (length L) (+ (equal? item (head L)) (count item (tail L))) 0)))
 (count 0 (list 0 1 2 3 0 0))
 ; 3
 (count (quote the) (quote (the more the merrier the bigger the better)))
@@ -36,7 +34,7 @@
 ; 65536.0
 
 (define fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))
-(define range (lambda (a b) (if (= a b) (quote ()) (cons a (range (+ a 1) b)))))
+(define range (lambda (a b) (if (= a b) (list) (cons a (range (+ a 1) b)))))
 (range 0 10)
 ; (0 1 2 3 4 5 6 7 8 9)
 
