@@ -1,9 +1,5 @@
 const globalEnv = require("./globalEnv")
 
-function isAbsent(x) {
-  return x === null || x === undefined
-}
-
 function numberParser(input) {
   const i = input.indexOf(" ")
   let literal = i > 0 ? input.substring(0, input.indexOf(" ")) : input
@@ -27,15 +23,23 @@ const specialFormParsers = {
   "set!": setParser,
   quote: quoteParser,
 }
+
 function ifParser(input, env) {
-  const [test, afterTest, env_] = expressionParser(input, env)
-  const [conseqExp, afterConseq] = getSubExpression(afterTest)
-  const [altExp, remaining] = getSubExpression(afterConseq)
-  const result = test
+  const testResult = expressionParser(input, env)
+  if (!testResult) return null
+  const [isTrue, afterTest, env_] = testResult
+  const conseqResult = extractNextExpression(afterTest)
+  if (!conseqResult) return null
+  const [conseqExp, afterConseq] = conseqResult
+  const altResult = extractNextExpression(afterConseq)
+  if (!altResult) return null
+  const [altExp, remaining] = altResult
+  const result = isTrue
     ? expressionParser(conseqExp, env_)
     : expressionParser(altExp, env_)
   return [result, remaining.slice(1).trim(), env]
 }
+
 function defineParser(input, env) {
   const [symbol, afterSymbol] = expressionParser(input, env)
   const [exp, remaining] = expressionParser(afterSymbol, env)
@@ -43,20 +47,22 @@ function defineParser(input, env) {
   const result = typeof env[symbol] === "function" ? symbol : env[symbol]
   return [result, remaining.slice(1).trim(), env]
 }
+
 function quoteParser(input, env) {
   if (input[0] === "(") {
-    const [exp, rest] = getSubExpression(input)
+    const [exp, rest] = extractNextExpression(input)
     return [exp, rest, env]
   }
-  const [arg, aftreArgs] = getArguments(input)
+  const [arg, aftreArgs] = getArguments(input, env)
   return [arg[0], aftreArgs.slice(1).trim(), env]
 }
 
 function beginParser(input, env) {
-  input = input.trim()
+  let rest = input.trim()
   const subExpressions = []
+
   while (true) {
-    const [subExp, afterSubExp] = getSubExpression(rest)
+    const [subExp, afterSubExp] = extractNextExpression(rest)
     subExpressions.push(subExp)
     rest = afterSubExp.trim()
     if (rest[0] === ")") {
@@ -70,6 +76,7 @@ function beginParser(input, env) {
     env,
   ]
 }
+
 function lamdaParser(input, env) {
   let rest = input.slice(1).trim()
 
@@ -82,32 +89,32 @@ function lamdaParser(input, env) {
     }
   }
   rest = rest.slice(1).trim()
-  const [body, afterBody] = getSubExpression(rest)
+  const [body, afterBody] = extractNextExpression(rest)
 
   const procedure = function (...args) {
     const procedureEnv = Object.create(env)
     params.forEach((param, i) => {
-      procedureEnv[param] = Array.isArray(args[i])
-        ? args[i]
-        : expressionParser(args[i], env)[0]
+      procedureEnv[param] = args[i]
     })
     return expressionParser(body, procedureEnv)
   }
   return [procedure, afterBody.slice(1).trim(), env]
 }
+
 function setParser(input, env) {
   const stringParsed = stringParser(input)
   if (!stringParsed) return null
-  const symbol = stringParsed[0]
-
-  const [prevValue, afterSymbol, env0] = expressionParser(rest, env)
-  const [presentValue, remaining, env1] = expressionParser(afterSymbol, env0)
-  if (!prevValue) throw `ReferenceError: '${symbol}' is not found`
-  env[symbol] = presentValue
-  return [prevValue, remaining.slice(1).trim(), env1]
+  const [symbol, afterSymbol] = stringParsed
+  const prevValue = env[symbol]
+  if (!prevValue) throw new ReferenceError(`'${symbol}' is not found`)
+  const presentValue = expressionParser(afterSymbol)
+  if (!presentValue) return null
+  const [value, remaining] = presentValue
+  env[symbol] = value
+  return [prevValue, remaining.slice(1).trim(), env]
 }
 
-function getSubExpression(input) {
+function extractNextExpression(input) {
   if (input[0] !== "(") {
     const literal = input.substring(0, input.indexOf(" "))
     return [literal, input.slice(literal.length).trim()]
@@ -133,16 +140,32 @@ function getSubExpression(input) {
 function getArguments(input, env = globalEnv) {
   let args = []
   while (input[0] !== ")") {
-    const [value, remExp, localEnv] = expressionParser(input, env)
+    // ! may return null
+    const argResult = expressionParser(input, env)
+    if (!argResult) return null
+    const [value, remExp, localEnv] = argResult
     input = remExp
     env = localEnv
     if (value !== null) args.push(value)
+    console.log({ args })
   }
   return [args, input.slice(1).trim()]
 }
 
+function functionParser(operator, input, env = globalEnv) {
+  let args = []
+  while (input[0] !== ")") {
+    const argResult = expressionParser(input, env)
+    if (!argResult) return null
+    const [value, remExp] = argResult
+    input = remExp.trim()
+    if (value !== null) args.push(value)
+  }
+  return [env[operator](...args), input.slice(1).trim(), env]
+}
+
 function expressionParser(input, env = globalEnv) {
-  if (env.isAtom(input)) return [input, "", env]
+  // if (env.isAtom(input)) return [input, "", env]
   input = input.trim()
   //number
   const numberParsed = numberParser(input)
@@ -150,38 +173,52 @@ function expressionParser(input, env = globalEnv) {
     return numberParsed[1].length ? [...numberParsed, env] : numberParsed[0]
   }
 
-  //quote
   if (input[0] === "(") {
-    let res = expressionParser(input.slice(1), env)
-    return !res[1].length ? res[0] : res
+    input = input.slice(1).trim()
+    // let res = expressionParser(input.slice(1), env)
+    // return !res[1].length ? res[0] : res
+
+    const stringParsed = stringParser(input)
+    if (!stringParsed) return null
+    let [operator, rest] = stringParser(input)
+
+    let result = null
+
+    // special form
+    if (operator in specialFormParsers) {
+      result = specialFormParsers[operator](rest.trim(), env)
+    }
+    if (operator in env) {
+      // env function
+      if (typeof env[operator] === "function") {
+        result = functionParser(operator, rest.trim(), env)
+      }
+    }
+    return !result[1].length ? result[0] : result
+  }
+
+  if (input[0] === ")") {
+    throw "Error parsing the expression. Please check ()s"
   }
 
   const stringParsed = stringParser(input)
   if (!stringParsed) return null
-  let [operator, rest] = stringParser(input)
-
-  // special form
-  if (operator in specialFormParsers) {
-    return specialFormParsers[operator](rest.trim(), env)
-  }
-  debugger
-  if (!isAbsent(env[operator])) {
-    // env function
-    if (typeof env[operator] === "function") {
-      const [args, aftreArgs] = getArguments(rest, env)
-      return [env[operator](...args), aftreArgs, env]
-    }
+  let [token, rest] = stringParser(input)
+  if (token in env) {
     // value in env, Eg: PI
-    return [env[operator], rest, env]
+    return !rest.length ? env[token] : [env[token], rest, env]
   }
-  if (input[0] === ")") {
-    throw "Error parsing the expression. Please check ()s"
+  // quote
+  if (token[0] === "'") {
+    if (token.slice(1).length)
+      return !rest.length ? token.slice(1) : [token.slice(1), rest, env]
+    const nextExp = extractNextExpression(rest.trim())
+    if (!nextExp) return null
+    const [exp, remaining] = nextExp
+    return !remaining.length ? exp : [exp, remaining, env]
   }
   // string literal
-  if (operator[0] === "'") {
-    return [operator.slice(1), rest, env]
-  }
-  return [...stringParsed, env]
+  return [token, rest, env]
 }
 
 module.exports = expressionParser
