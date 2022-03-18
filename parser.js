@@ -28,10 +28,10 @@ function ifParser(input, env) {
   const testResult = expressionParser(input, env)
   if (!testResult) return null
   const [isTrue, afterTest, env_] = testResult
-  const conseqResult = extractNextExpression(afterTest)
+  const conseqResult = extractNextExpression(afterTest.trim())
   if (!conseqResult) return null
   const [conseqExp, afterConseq] = conseqResult
-  const altResult = extractNextExpression(afterConseq)
+  const altResult = extractNextExpression(afterConseq.trim())
   if (!altResult) return null
   const [altExp, remaining] = altResult
   const result = isTrue
@@ -147,12 +147,11 @@ function getArguments(input, env = globalEnv) {
     input = remExp
     env = localEnv
     if (value !== null) args.push(value)
-    console.log({ args })
   }
   return [args, input.slice(1).trim()]
 }
 
-function functionParser(operator, input, env = globalEnv) {
+function functionParser(funtionExp, input, env = globalEnv) {
   let args = []
   while (input[0] !== ")") {
     const argResult = expressionParser(input, env)
@@ -161,39 +160,42 @@ function functionParser(operator, input, env = globalEnv) {
     input = remExp.trim()
     if (value !== null) args.push(value)
   }
-  return [env[operator](...args), input.slice(1).trim(), env]
+  return [funtionExp(...args), input.slice(1).trim(), env]
 }
 
 function expressionParser(input, env = globalEnv) {
-  // if (env.isAtom(input)) return [input, "", env]
   input = input.trim()
   //number
   const numberParsed = numberParser(input)
   if (numberParsed) {
     return numberParsed[1].length ? [...numberParsed, env] : numberParsed[0]
   }
-
   if (input[0] === "(") {
     input = input.slice(1).trim()
-    // let res = expressionParser(input.slice(1), env)
-    // return !res[1].length ? res[0] : res
-
-    const stringParsed = stringParser(input)
-    if (!stringParsed) return null
-    let [operator, rest] = stringParser(input)
-
     let result = null
 
-    // special form
-    if (operator in specialFormParsers) {
-      result = specialFormParsers[operator](rest.trim(), env)
-    }
-    if (operator in env) {
-      // env function
-      if (typeof env[operator] === "function") {
-        result = functionParser(operator, rest.trim(), env)
+    if (input[0] === "(") {
+      // iif
+      const [exp, afterExp] = extractNextExpression(input)
+      const iif = expressionParser(exp)
+      if (!iff) return null
+      result = functionParser(iif, afterExp.trim(), env)
+    } else {
+      const stringParsed = stringParser(input)
+      if (!stringParsed) return null
+      let [operator, rest] = stringParser(input)
+
+      // special form
+      if (operator in specialFormParsers) {
+        result = specialFormParsers[operator](rest.trim(), env)
+      } else if (operator in env) {
+        // env function
+        if (typeof env[operator] === "function") {
+          result = functionParser(env[operator], rest.trim(), env)
+        }
       }
     }
+
     return !result[1].length ? result[0] : result
   }
 
